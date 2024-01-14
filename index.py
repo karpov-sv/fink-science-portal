@@ -1073,11 +1073,16 @@ def results(n_submit, n_clicks, s_n_clicks, searchurl, value, history, show_tabl
     elif query['action'] == 'objectid':
         # Search objects by objectId
         msg = "ObjectId search with {} name {}".format('partial' if query.get('partial') else 'exact', query['object'])
+        payload = {
+            'objectId': query['object']
+        }
+
+        if 'extra' in query['params']:
+            payload['extra'] = query['params']['extra']
+
         r = request_api(
             '/api/v1/explorer',
-            json={
-                'objectId': query['object'],
-            }
+            json=payload
         )
 
     elif query['action'] == 'sso':
@@ -1096,6 +1101,9 @@ def results(n_submit, n_clicks, s_n_clicks, searchurl, value, history, show_tabl
         payload = {
             'id': query['object']
         }
+
+        if 'extra' in query['params']:
+            payload['extra'] = query['params']['extra']
 
         r = request_api(
             '/api/v1/tracklet',
@@ -1137,6 +1145,9 @@ def results(n_submit, n_clicks, s_n_clicks, searchurl, value, history, show_tabl
             msg += ' window {} days'.format(window)
 
             payload['window'] = window
+
+        if 'extra' in query['params']:
+            payload['extra'] = query['params']['extra']
 
         r = request_api(
             '/api/v1/explorer',
@@ -1180,6 +1191,9 @@ def results(n_submit, n_clicks, s_n_clicks, searchurl, value, history, show_tabl
 
             payload['stopdate'] = stopdate
 
+        if 'extra' in query['params']:
+            payload['extra'] = query['params']['extra']
+
         r = request_api(
             '/api/v1/latests',
             json=payload
@@ -1212,6 +1226,9 @@ def results(n_submit, n_clicks, s_n_clicks, searchurl, value, history, show_tabl
 
             payload['window'] = window
 
+        if 'extra' in query['params']:
+            payload['extra'] = query['params']['extra']
+
         r = request_api(
             '/api/v1/explorer',
             json=payload
@@ -1241,6 +1258,9 @@ def results(n_submit, n_clicks, s_n_clicks, searchurl, value, history, show_tabl
 
             payload['stop_date'] = stopdate
 
+        if 'extra' in query['params']:
+            payload['extra'] = query['params']['extra']
+
         r = request_api(
             '/api/v1/anomaly',
             json=payload
@@ -1268,6 +1288,9 @@ def results(n_submit, n_clicks, s_n_clicks, searchurl, value, history, show_tabl
             msg += ' seed {}'.format(seed)
 
             payload['seed'] = seed
+
+        if 'extra' in query['params']:
+            payload['extra'] = query['params']['extra']
 
         r = request_api(
             '/api/v1/random',
