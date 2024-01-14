@@ -201,6 +201,11 @@ def return_explorer_pdf(payload: dict, user_group: int) -> pd.DataFrame:
     else:
         jd_stop = Time.now().jd
 
+    if 'extra' in payload:
+        extra_cond = payload['extra']
+    else:
+        extra_cond = None
+
     n = int(payload.get('n', 1000))
 
     if user_group == 0:
@@ -266,6 +271,9 @@ def return_explorer_pdf(payload: dict, user_group: int) -> pd.DataFrame:
             inclusive=True
         )
 
+        if extra_cond:
+            client.setEvaluation(extra_cond)
+
         # Filter by time
         if 'startdate' in payload:
             client.setRangeScan(True)
@@ -302,6 +310,9 @@ def return_explorer_pdf(payload: dict, user_group: int) -> pd.DataFrame:
         # Limit the time window to 3 hours days
         if jd_stop - jd_start > 3/24:
             jd_stop = jd_start + 3/24
+
+        if extra_cond:
+            client.setEvaluation(extra_cond)
 
         # Send the request. RangeScan.
         client.setRangeScan(True)
@@ -390,6 +401,11 @@ def return_latests_pdf(payload: dict, return_raw: bool = False) -> pd.DataFrame:
     else:
         truncated = True
 
+    if 'extra' in payload:
+        extra_cond = payload['extra']
+    else:
+        extra_cond = None
+
     # Search for latest alerts for a specific class
     tns_classes = pd.read_csv('assets/tns_types.csv', header=None)[0].values
     is_tns = payload['class'].startswith('(TNS)') and (payload['class'].split('(TNS) ')[1] in tns_classes)
@@ -399,6 +415,9 @@ def return_latests_pdf(payload: dict, return_raw: bool = False) -> pd.DataFrame:
         client.setLimit(nalerts)
         client.setRangeScan(True)
         client.setReversed(True)
+
+        if extra_cond:
+            client.setEvaluation(extra_cond)
 
         results = client.scan(
             "",
@@ -424,6 +443,9 @@ def return_latests_pdf(payload: dict, return_raw: bool = False) -> pd.DataFrame:
         client.setRangeScan(True)
         client.setReversed(True)
 
+        if extra_cond:
+            client.setEvaluation(extra_cond)
+
         results = client.scan(
             "",
             "key:key:{}_{},key:key:{}_{}".format(
@@ -441,6 +463,9 @@ def return_latests_pdf(payload: dict, return_raw: bool = False) -> pd.DataFrame:
         client.setLimit(nalerts)
         client.setRangeScan(True)
         client.setReversed(True)
+
+        if extra_cond:
+            client.setEvaluation(extra_cond)
 
         to_evaluate = "key:key:{},key:key:{}".format(jd_start, jd_stop)
         results = client.scan(
@@ -638,6 +663,11 @@ def return_tracklet_pdf(payload: dict) -> pd.DataFrame:
     else:
         cols = '*'
 
+    if 'extra' in payload:
+        extra_cond = payload['extra']
+    else:
+        extra_cond = None
+
     if cols == '*':
         truncated = False
     else:
@@ -659,6 +689,10 @@ def return_tracklet_pdf(payload: dict) -> pd.DataFrame:
     to_evaluate = "key:key:{}".format(payload_name)
 
     client = connect_to_hbase_table('ztf.tracklet')
+
+    if extra_cond:
+        client.setEvaluation(extra_cond)
+
     results = client.scan(
         "",
         to_evaluate,
@@ -1136,6 +1170,11 @@ def return_random_pdf(payload: dict) -> pd.DataFrame:
     else:
         classsearch = False
 
+    if 'extra' in payload:
+        extra_cond = payload['extra']
+    else:
+        extra_cond = None
+
     if cols == '*':
         truncated = False
     else:
@@ -1155,6 +1194,9 @@ def return_random_pdf(payload: dict) -> pd.DataFrame:
     results = []
     client.setLimit(1000)
     client.setRangeScan(True)
+
+    if extra_cond:
+        client.setEvaluation(extra_cond)
 
     jd_low = Time('2019-11-02 03:00:00.0').jd
     jd_high = Time.now().jd
@@ -1247,6 +1289,11 @@ def return_anomalous_objects_pdf(payload: dict) -> pd.DataFrame:
     else:
         cols = '*'
 
+    if 'extra' in payload:
+        extra_cond = payload['extra']
+    else:
+        extra_cond = None
+
     if cols == '*':
         truncated = False
     else:
@@ -1256,6 +1303,9 @@ def return_anomalous_objects_pdf(payload: dict) -> pd.DataFrame:
     client.setLimit(nalerts)
     client.setRangeScan(True)
     client.setReversed(True)
+
+    if extra_cond:
+        client.setEvaluation(extra_cond)
 
     to_evaluate = "key:key:{},key:key:{}".format(jd_start, jd_stop)
     results = client.scan(
