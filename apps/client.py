@@ -18,11 +18,12 @@ import jpype
 import jpype.imports
 
 import numpy as np
+import glob
 
 import yaml
 
 
-def initialise_jvm(path=None):
+def initialise_jvm(path=None, classpath=None):
     """ Start a JVM
 
     Parameters
@@ -32,13 +33,23 @@ def initialise_jvm(path=None):
     """
     if not jpype.isJVMStarted():
         if path is None:
-            path = os.path.dirname(apps_loc) + '/../bin/FinkBrowser.exe.jar'
-        jarpath = "-Djava.class.path={}".format(path)
-        jpype.startJVM(jpype.getDefaultJVMPath(), "-ea", jarpath, convertStrings=True)
+            path = os.path.dirname(apps_loc) + '/../bin/Lomikel.exe.jar'
+
+        classpaths = [path]
+        if classpath is not None:
+            if isinstance(classpath, list):
+                # List of paths
+                classpaths += classpath
+            else:
+                # Single path or glob expression or a set of these separated by colons
+                for _ in  classpath.split(':'):
+                    classpaths += glob.glob(_)
+
+        jpype.startJVM(jpype.getDefaultJVMPath(), classpath=classpaths, convertStrings=True)
 
     jpype.attachThreadToJVM()
 
-def connect_to_hbase_table(tablename: str, schema_name=None, nlimit=10000, setphysicalrepo=False, config_path=None):
+def connect_to_hbase_table(tablename: str, schema_name=None, nlimit=10000, setphysicalrepo=False, config_path=None, timeout=100000):
     """ Return a client connected to a HBase table
 
     Parameters
@@ -55,8 +66,6 @@ def connect_to_hbase_table(tablename: str, schema_name=None, nlimit=10000, setph
     config_path: str, optional
         Path to the config file. Default is None (relative to the apps/ folder)
     """
-    initialise_jvm()
-
     if config_path is None:
         config_path = os.path.dirname(apps_loc) + '/../config.yml'
     args = yaml.load(
@@ -64,8 +73,10 @@ def connect_to_hbase_table(tablename: str, schema_name=None, nlimit=10000, setph
         yaml.Loader
     )
 
+    initialise_jvm(classpath=args.get('CLASSPATH'))
+
     import com.Lomikel.HBaser
-    from com.astrolabsoftware.FinkBrowser.Utils import Init
+    from com.Lomikel.Utils import Init
 
     Init.init()
 
@@ -73,7 +84,7 @@ def connect_to_hbase_table(tablename: str, schema_name=None, nlimit=10000, setph
 
     if schema_name is None:
         schema_name = args['SCHEMAVER']
-    client.connect(tablename, schema_name)
+    client.connect(tablename, schema_name, timeout)
     if setphysicalrepo:
         import com.Lomikel.HBaser.FilesBinaryDataRepository
         client.setRepository(com.Lomikel.HBaser.FilesBinaryDataRepository())
@@ -108,8 +119,6 @@ def create_or_update_hbase_table(tablename: str, families: list, schema_name: st
     if len(np.unique(families)) != 1:
         raise NotImplementedError("`create_hbase_table` only accepts one family name")
 
-    initialise_jvm()
-
     if config_path is None:
         config_path = os.path.dirname(apps_loc) + '/../config.yml'
     args = yaml.load(
@@ -117,8 +126,10 @@ def create_or_update_hbase_table(tablename: str, families: list, schema_name: st
         yaml.Loader
     )
 
+    initialise_jvm(classpath=args.get('CLASSPATH'))
+
     import com.Lomikel.HBaser
-    from com.astrolabsoftware.FinkBrowser.Utils import Init
+    from com.Lomikel.Utils import Init
 
     Init.init()
 
