@@ -14,10 +14,12 @@
 # limitations under the License.
 from dash import html, dcc, Input, Output
 import dash_bootstrap_components as dbc
+import dash_mantine_components as dmc
 
 from app import app
 from apps.utils import loading
 from apps.utils import request_api
+from apps.utils import query_and_order_statistics
 
 import numpy as np
 import pandas as pd
@@ -110,34 +112,25 @@ All other fields starting with `class:` are crossmatch from the SIMBAD database.
 """.format(pd.DataFrame([dic_names]).T.rename(columns={0: 'description'}).to_markdown())
 
 @app.callback(
-    Output('object-stats', 'children'),
-    [
-        Input('url', 'pathname'),
-    ])
+    Output('object-stats', 'data'),
+    Input('url', 'pathname'),
+)
 def store_stat_query(name):
     """ Cache query results (data and upper limits) for easy re-use
 
     https://dash.plotly.com/sharing-data-between-callbacks
     """
-    cols = 'basic:raw,basic:sci,basic:fields,basic:exposures,class:Unknown'
-
-    r = request_api(
-        '/api/v1/statistics',
-        json={
-            'date': '',
-            'output-format': 'json',
-            'columns': cols
-        }
+    pdf = query_and_order_statistics(
+        columns='basic:raw,basic:sci,basic:fields,basic:exposures,class:Unknown',
+        drop=False
     )
-
-    pdf = pd.read_json(r)
-    pdf = pdf.set_index('key:key', drop=False)
 
     return pdf.to_json()
 
 @app.callback(
     Output('stat_row', 'children'),
-    Input('object-stats', 'children')
+    Input('object-stats', 'data'),
+    prevent_initial_call=True
 )
 def create_stat_row(object_stats):
     """ Show basic stats. Used in the desktop app.
@@ -169,7 +162,8 @@ def create_stat_row(object_stats):
 
 @app.callback(
     Output('stat_row_mobile', 'children'),
-    Input('object-stats', 'children')
+    Input('object-stats', 'data'),
+    prevent_initial_call=True
 )
 def create_stat_row(object_stats):
     """ Show basic stats. Used in the mobile app.
@@ -251,7 +245,10 @@ def heatmap_content():
         [
             dbc.Row(
                 [
-                    dbc.Col(id='heatmap_stat')
+                    dbc.Col(
+                        dmc.Skeleton(style={'width': '100%', 'height': '30pc'}, className="mt-3"),
+                        id='heatmap_stat'
+                    )
                 ], justify="center", className="g-0"
             ),
         ],
@@ -322,17 +319,7 @@ def daily_stats():
 def generate_night_list():
     """ Generate the list of available nights (last night first)
     """
-    r = request_api(
-        '/api/v1/statistics',
-        json={
-            'date': '',
-            'output-format': 'json',
-            'columns': ''
-        }
-    )
-
-    # Format output in a DataFrame
-    pdf = pd.read_json(r)
+    pdf = query_and_order_statistics(columns='', drop=False)
 
     labels = list(pdf['key:key'].apply(lambda x: x[4:8] + '-' + x[8:10] + '-' + x[10:12]))
 
@@ -440,7 +427,7 @@ def layout():
                 ],
                 justify="center", className="mt-3"
             ),
-            html.Div(id='object-stats', style={'display': 'none'}),
+            dcc.Store(id='object-stats'),
         ],
         fluid='lg',
     )
