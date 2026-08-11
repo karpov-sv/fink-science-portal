@@ -1128,11 +1128,16 @@ def card_id1(object_data, object_uppervalid, object_upper):
 
     icon = None
     badges = []
-    for c in np.unique(pdf["v:classification"]):
+    used = set()
+    # We need to iterate latest-to-oldest, so no unique(), alas
+    for c in pdf["v:classification"]:
         if c in simbad_types:
             color = class_colors["Simbad"]
 
             if icon is None: # Use latest only
+                # Fallback to default icon on unknown/unsupported latest class
+                icon = "/assets/Fink_SecondaryLogo_WEB.png"
+
                 if c.startswith("EB*") or c.startswith("Candidate_EB*"):
                     icon = "/assets/types/EclBin.png"
 
@@ -1156,13 +1161,16 @@ def card_id1(object_data, object_uppervalid, object_upper):
             # Sometimes SIMBAD mess up names :-)
             color = class_colors["Simbad"]
 
-        badges.append(
-            make_badge(
-                c,
-                color=color,
-                tooltip="Fink classification",
-            ),
-        )
+        if c not in used:
+            used.add(c)
+
+            badges.append(
+                make_badge(
+                    c,
+                    color=color,
+                    tooltip="Fink classification",
+                ),
+            )
 
     tns_badge, tns_icon = generate_tns_badge(get_first_value(pdf, "i:objectId"), get_icon=True)
     if tns_badge is not None:
